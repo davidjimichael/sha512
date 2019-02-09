@@ -28,7 +28,7 @@ int main(int argc, const char *argv[]) {
 	for (auto const& s : buffer) { 
 		msg += s; 
 	}
-	msg = "abc";
+	
 	std::string hashedMsg = hash(msg);
 	std::cout << "SHA512:" << std::endl << hashedMsg;
 	std::cout << "Press any key to continue...\n";
@@ -87,12 +87,9 @@ std::string hash(std::string msg) {
 	// Return final message
 	std::stringstream ss;
 	for (int i = 0; i < 8; i++) {
-		// std::cout  << std::setw(16) << std::hex << h[i] << std::endl;
 		ss << std::setw(16) << std::hex << h[i];
 	}
 	std::string temp = ss.str();
-	// std::cout << temp << std::endl;
 	std::replace(temp.begin(), temp.end(), ' ', '0');
-	// std::cout << temp << std::endl;
 	return temp;
 }
