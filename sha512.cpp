@@ -11,19 +11,26 @@
 #include <numeric>
 #include <cstring>
 
-int main(int argc, const char * argv[]) {
-	std::ifstream input("uhall.jpg", std::ios::binary);
+int main(int argc, const char *argv[]) {
+	if (argc != 2) {
+		std::cout << "Must include file path\n";
+		return 1;
+	}
 
-	// copies all data into buffer
+	// read file binary
+	std::ifstream input(argv[1], std::ios::binary);
+
+	// copy binary to buffer
 	std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input), {});
 
-	// prints buffer to console
 	std::string s, msg;
-	for (auto const& s : buffer) { msg += s; }
-		std::cout << msg;
+	for (auto const& s : buffer) { 
+		msg += s; 
+	}
 
 	std::string hashedMsg = hash(msg);
-	std::cout << "Hash:" << std::endl << hashedMsg;
+	std::cout << "SHA512:" << std::endl << hashedMsg;
+	std::cout << "Press any key to continue...\n";
 	std::cin.get();
 }
 
@@ -39,22 +46,18 @@ std::string hash(std::string msg) {
         0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
 	};
 	std::vector<uint64_t> words(finalSize / 64);
+
+	// void * memcpy ( void * destination, const void * source, size_t num );
 	memcpy(words.data(), msg.c_str(), msg.length());
 	memcpy((unsigned char *)words.data() + msg.length(), &eighty, 1);
 	memcpy((unsigned char *)words.data() + msg.length() + 1 + ((k - 7) / 8), &msgBitSize, 8);
-	unsigned char* byte = (unsigned char*)words.data();
-	for (int i = 0; i < words.size() * 8; i++) {
-		std::bitset<8> b(byte[i]);
-		std::cout << b << " " << std::hex << std::setfill('0') << std::setw(2) << (int)byte[i] << std::endl;
-	}
+	
 	// Processing
-	int eight = 8;
-	uint64_t workingValues[eight];
-	uint64_t alphas[eight];
-	uint64_t temp1;
-	uint64_t temp2;
+	uint64_t a[8]; // a, b, c, d, e, f, g, h
+	uint64_t t0, t1;
 	for (int chunk = 0; chunk < words.size(); chunk += 16) {
 		std::vector<uint64_t> schedule(80);
+
 		for (int i = 0; i < 16; i++) {
 			schedule[i] = __builtin_bswap64(words[chunk + i]);
 		}
@@ -62,27 +65,22 @@ std::string hash(std::string msg) {
 			schedule[i] = (s1(schedule[i - 2]) + schedule[i - 7] + s0(schedule[i - 15]) + schedule[i - 16]);
 		}
 		for (int i = 0; i < 8; i++) {
-			workingValues[i] = hashValues[i];
-		}
-		for (int i = 0; i < eight; i++) {
-			alphas[i] = workingValues[i];
+			a[i] = hashValues[i];
 		}
 		for (int t = 0; t < 80; t++) {
-			temp1 = (alphas[7] + S1(alphas[4]) + ch(alphas[4], alphas[5], alphas[6]) + sha::words[t] + schedule[t]);
-			// temp1 = (h + S1(e) + ch(e, f, g) + sha::words[t] + schedule[t]);
-			temp2 = (S0(alphas[0]) + maj(alphas[0], alphas[1], alphas[2]));
-			// temp2 = (S0(a) + maj(a, b, c));
-			alphas[7] = alphas[6];
-			alphas[6] = alphas[5];
-			alphas[5] = alphas[4];
-			alphas[4] = (alphas[3] + temp1);
-			alphas[3] = alphas[2];
-			alphas[2] = alphas[1];
-			alphas[1] = alphas[0];
-			alphas[0] = (temp1 + temp2);
+			t0 = (a[7] + S1(a[4]) + ch(a[4], a[5], a[6]) + sha::words[t] + schedule[t]);
+			t1 = (S0(a[0]) + maj(a[0], a[1], a[2]));
+			a[7] = a[6];
+			a[6] = a[5];
+			a[5] = a[4];
+			a[4] = (a[3] + t0);
+			a[3] = a[2];
+			a[2] = a[1];
+			a[1] = a[0];
+			a[0] = (t0 + t1);
 		}
-		for (int i = 0; i < eight; i++) {
-			hashValues[i] = (hashValues[i] + alphas[i]);
+		for (int i = 0; i < 8; i++) {
+			hashValues[i] = (hashValues[i] + a[i]);
 		}
 	}
 	// Return final message
