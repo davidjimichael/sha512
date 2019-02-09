@@ -28,14 +28,15 @@ int main(int argc, const char *argv[]) {
 	for (auto const& s : buffer) { 
 		msg += s; 
 	}
-	
+	msg = "abc";
 	std::string hashedMsg = hash(msg);
 	std::cout << "SHA512:" << std::endl << hashedMsg;
 	std::cout << "Press any key to continue...\n";
 	std::cin.get();
 }
 
-std::string hash(std::string msg) {
+// padd message for processing
+std::vector<uint64_t> pad(std::string msg) {
 	//Preprocessing 
 	const unsigned char eighty = 0x80;
 	uint64_t msgLength = msg.length() * 8;
@@ -48,10 +49,33 @@ std::string hash(std::string msg) {
 	};
 	std::vector<uint64_t> words(finalSize / 64);
 
-	// void * memcpy ( void * destination, const void * source, size_t num );
+	// copy msg, add padding
 	memcpy(words.data(), msg.c_str(), msg.length());
 	memcpy((unsigned char *)words.data() + msg.length(), &eighty, 1);
 	memcpy((unsigned char *)words.data() + msg.length() + 1 + ((k - 7) / 8), &msgBitSize, 8);
+	
+	return words;
+}
+
+std::string hash(std::string msg) {
+	// //Preprocessing 
+	// const unsigned char eighty = 0x80;
+	// uint64_t msgLength = msg.length() * 8;
+	// uint64_t msgBitSize = __builtin_bswap64(msgLength);
+	// uint64_t k = 1024 - ((msgLength + 64 + 1) % 1024);
+	// uint64_t finalSize = msgLength + 1 + k + 64;
+	uint64_t h[] = {
+		0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1, 
+        0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
+	};
+	// std::vector<uint64_t> words(finalSize / 64);
+
+	// // copy msg, add padding
+	// memcpy(words.data(), msg.c_str(), msg.length());
+	// memcpy((unsigned char *)words.data() + msg.length(), &eighty, 1);
+	// memcpy((unsigned char *)words.data() + msg.length() + 1 + ((k - 7) / 8), &msgBitSize, 8);
+
+	std::vector<uint64_t> words = pad(msg);
 	
 	// Processing
 	uint64_t a[8]; // a, b, c, d, e, f, g, h
@@ -85,11 +109,22 @@ std::string hash(std::string msg) {
 		}
 	}
 	// Return final message
+	// std::stringstream ss;
+	// for (int i = 0; i < 8; i++) {
+	// 	ss << std::setw(16) << std::hex << h[i];
+	// }
+	// std::string temp = ss.str();
+	// std::replace(temp.begin(), temp.end(), ' ', '0');
+	// return temp;
+	return concatHash(h);
+}
+
+std::string concatHash(uint64_t h[]) {
 	std::stringstream ss;
+
+	// setw and setfill prevent truncating leading zeros
 	for (int i = 0; i < 8; i++) {
-		ss << std::setw(16) << std::hex << h[i];
+		ss << std::setw(16) << std::setfill('0') << std::hex << h[i];
 	}
-	std::string temp = ss.str();
-	std::replace(temp.begin(), temp.end(), ' ', '0');
-	return temp;
+	return ss.str();
 }
