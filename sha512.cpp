@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <vector>
@@ -27,7 +28,7 @@ int main(int argc, const char *argv[]) {
 	for (auto const& s : buffer) { 
 		msg += s; 
 	}
-
+	msg = "abc";
 	std::string hashedMsg = hash(msg);
 	std::cout << "SHA512:" << std::endl << hashedMsg;
 	std::cout << "Press any key to continue...\n";
@@ -41,7 +42,7 @@ std::string hash(std::string msg) {
 	uint64_t msgBitSize = __builtin_bswap64(msgLength);
 	uint64_t k = 1024 - ((msgLength + 64 + 1) % 1024);
 	uint64_t finalSize = msgLength + 1 + k + 64;
-	uint64_t hashValues[] = {
+	uint64_t h[] = {
 		0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1, 
         0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
 	};
@@ -64,9 +65,9 @@ std::string hash(std::string msg) {
 		for (int i = 16; i < 80; i++) {
 			schedule[i] = (s1(schedule[i - 2]) + schedule[i - 7] + s0(schedule[i - 15]) + schedule[i - 16]);
 		}
-		for (int i = 0; i < 8; i++) {
-			a[i] = hashValues[i];
-		}
+		
+		std::copy(std::begin(h), std::end(h), std::begin(a));
+		
 		for (int t = 0; t < 80; t++) {
 			t0 = (a[7] + S1(a[4]) + ch(a[4], a[5], a[6]) + sha::words[t] + schedule[t]);
 			t1 = (S0(a[0]) + maj(a[0], a[1], a[2]));
@@ -80,13 +81,18 @@ std::string hash(std::string msg) {
 			a[0] = (t0 + t1);
 		}
 		for (int i = 0; i < 8; i++) {
-			hashValues[i] = (hashValues[i] + a[i]);
+			h[i] = (h[i] + a[i]);
 		}
 	}
 	// Return final message
 	std::stringstream ss;
 	for (int i = 0; i < 8; i++) {
-		ss << std::hex << hashValues[i];
+		// std::cout  << std::setw(16) << std::hex << h[i] << std::endl;
+		ss << std::setw(16) << std::hex << h[i];
 	}
-	return ss.str();
+	std::string temp = ss.str();
+	// std::cout << temp << std::endl;
+	std::replace(temp.begin(), temp.end(), ' ', '0');
+	// std::cout << temp << std::endl;
+	return temp;
 }
