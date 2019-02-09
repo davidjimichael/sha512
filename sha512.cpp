@@ -48,15 +48,9 @@ std::string hash(std::string msg) {
 		std::cout << b << " " << std::hex << std::setfill('0') << std::setw(2) << (int)byte[i] << std::endl;
 	}
 	// Processing
-	uint64_t workingValues[8];
-	uint64_t a;
-	uint64_t b;
-	uint64_t c;
-	uint64_t d;
-	uint64_t e;
-	uint64_t f;
-	uint64_t g;
-	uint64_t h;
+	int eight = 8;
+	uint64_t workingValues[eight];
+	uint64_t alphas[eight];
 	uint64_t temp1;
 	uint64_t temp2;
 	for (int chunk = 0; chunk < words.size(); chunk += 16) {
@@ -70,34 +64,26 @@ std::string hash(std::string msg) {
 		for (int i = 0; i < 8; i++) {
 			workingValues[i] = hashValues[i];
 		}
-		a = workingValues[0];
-		b = workingValues[1];
-		c = workingValues[2];
-		d = workingValues[3];
-		e = workingValues[4];
-		f = workingValues[5];
-		g = workingValues[6];
-		h = workingValues[7];
-		for (int t = 0; t < 80; t++) {
-			temp1 = (h + S1(e) + ch(e, f, g) + sha::words[t] + schedule[t]);
-			temp2 = (S0(a) + maj(a, b, c));
-			h = g;
-			g = f;
-			f = e;
-			e = (d + temp1);
-			d = c;
-			c = b;
-			b = a;
-			a = (temp1 + temp2);
+		for (int i = 0; i < eight; i++) {
+			alphas[i] = workingValues[i];
 		}
-		hashValues[0] = (hashValues[0] + a);
-		hashValues[1] = (hashValues[1] + b);
-		hashValues[2] = (hashValues[2] + c);
-		hashValues[3] = (hashValues[3] + d);
-		hashValues[4] = (hashValues[4] + e);
-		hashValues[5] = (hashValues[5] + f);
-		hashValues[6] = (hashValues[6] + g);
-		hashValues[7] = (hashValues[7] + h);
+		for (int t = 0; t < 80; t++) {
+			temp1 = (alphas[7] + S1(alphas[4]) + ch(alphas[4], alphas[5], alphas[6]) + sha::words[t] + schedule[t]);
+			// temp1 = (h + S1(e) + ch(e, f, g) + sha::words[t] + schedule[t]);
+			temp2 = (S0(alphas[0]) + maj(alphas[0], alphas[1], alphas[2]));
+			// temp2 = (S0(a) + maj(a, b, c));
+			alphas[7] = alphas[6];
+			alphas[6] = alphas[5];
+			alphas[5] = alphas[4];
+			alphas[4] = (alphas[3] + temp1);
+			alphas[3] = alphas[2];
+			alphas[2] = alphas[1];
+			alphas[1] = alphas[0];
+			alphas[0] = (temp1 + temp2);
+		}
+		for (int i = 0; i < eight; i++) {
+			hashValues[i] = (hashValues[i] + alphas[i]);
+		}
 	}
 	// Return final message
 	std::stringstream ss;
